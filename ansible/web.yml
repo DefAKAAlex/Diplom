@@ -35,11 +35,10 @@
               <title>project Iskryanov AV </title>
               <style>
                   body {
-                      font-family: Arial, sans-serif;
                       text-align: center;
                       padding: 50px;
-                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                      color: white;
+                      background: #a6bb09;
+                      color: #fff3ad;
                   }
                   h1 { font-size: 48px; }
                   p { font-size: 24px; }
@@ -53,7 +52,7 @@
               </style>
           </head>
           <body>
-              <h1>project Iskryanov</h1>
+              <h1>Web 4 Project of Iskryanov</h1>
               <p>Yandex Cloud Infrastructure</p>
               <div class="hostname">
                   <p>Served by: <strong>{{ ansible_hostname }}</strong></p>

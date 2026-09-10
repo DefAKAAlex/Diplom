@@ -7,10 +7,11 @@ data "yandex_compute_image" "ubuntu" {
 # BASTION HOST (публичная подсеть A)
 # ============================================
 resource "yandex_compute_instance" "bastion" {
-  name        = "bastion"
-  hostname    = "bastion"
-  platform_id = "standard-v3"
-  zone        = "ru-central1-a"
+  name                      = "bastion"
+  hostname                  = "bastion"
+  platform_id               = "standard-v3"
+  zone                      = "ru-central1-a"
+  allow_stopping_for_update = true
 
   resources {
     cores         = 2
@@ -37,7 +38,7 @@ resource "yandex_compute_instance" "bastion" {
   }
 
   scheduling_policy {
-    preemptible = true
+    preemptible = false
   }
 }
 
@@ -45,11 +46,12 @@ resource "yandex_compute_instance" "bastion" {
 # WEB SERVER 1 (приватная подсеть A)
 # ============================================
 resource "yandex_compute_instance" "web" {
-  count       = 2
-  name        = "web-${count.index + 1}"
-  hostname    = "web-${count.index + 1}"
-  platform_id = "standard-v3"
-  zone        = count.index == 0 ? "ru-central1-a" : "ru-central1-b"
+  count                     = 2
+  name                      = "web-${count.index + 1}"
+  hostname                  = "web-${count.index + 1}"
+  platform_id               = "standard-v3"
+  zone                      = count.index == 0 ? "ru-central1-a" : "ru-central1-b"
+  allow_stopping_for_update = true
 
   resources {
     cores         = 2
@@ -76,7 +78,7 @@ resource "yandex_compute_instance" "web" {
   }
 
   scheduling_policy {
-    preemptible = true
+    preemptible = false
   }
 }
 
@@ -84,10 +86,11 @@ resource "yandex_compute_instance" "web" {
 # ZABBIX (публичная подсеть A)
 # ============================================
 resource "yandex_compute_instance" "zabbix" {
-  name        = "zabbix"
-  hostname    = "zabbix"
-  platform_id = "standard-v3"
-  zone        = "ru-central1-a"
+  name                      = "zabbix"
+  hostname                  = "zabbix"
+  platform_id               = "standard-v3"
+  zone                      = "ru-central1-a"
+  allow_stopping_for_update = true
 
   resources {
     cores         = 2
@@ -114,7 +117,7 @@ resource "yandex_compute_instance" "zabbix" {
   }
 
   scheduling_policy {
-    preemptible = true
+    preemptible = false
   }
 }
 
@@ -122,10 +125,11 @@ resource "yandex_compute_instance" "zabbix" {
 # ELASTICSEARCH (приватная подсеть A)
 # ============================================
 resource "yandex_compute_instance" "elasticsearch" {
-  name        = "elasticsearch"
-  hostname    = "elasticsearch"
-  platform_id = "standard-v3"
-  zone        = "ru-central1-a"
+  name                      = "elasticsearch"
+  hostname                  = "elasticsearch"
+  platform_id               = "standard-v3"
+  zone                      = "ru-central1-a"
+  allow_stopping_for_update = true
 
   resources {
     cores         = 2
@@ -152,7 +156,7 @@ resource "yandex_compute_instance" "elasticsearch" {
   }
 
   scheduling_policy {
-    preemptible = true
+    preemptible = false
   }
 }
 
@@ -160,10 +164,11 @@ resource "yandex_compute_instance" "elasticsearch" {
 # KIBANA (публичная подсеть A)
 # ============================================
 resource "yandex_compute_instance" "kibana" {
-  name        = "kibana"
-  hostname    = "kibana"
-  platform_id = "standard-v3"
-  zone        = "ru-central1-a"
+  name                      = "kibana"
+  hostname                  = "kibana"
+  platform_id               = "standard-v3"
+  zone                      = "ru-central1-a"
+  allow_stopping_for_update = true
 
   resources {
     cores         = 2
@@ -190,6 +195,6 @@ resource "yandex_compute_instance" "kibana" {
   }
 
   scheduling_policy {
-    preemptible = true
+    preemptible = false
   }
 }
