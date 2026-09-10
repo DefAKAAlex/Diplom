@@ -19,20 +19,21 @@
 ## Архитектура
 
 
-## Готовая архитектура
+## Оснва архитектуры
 
 ### Виртуальные машины
-Название        ВМ          Публичный IP        Приватный IP         Доступ из веб                          Назначение
-Web-1           web-1           	нет           	10.0.10.14                                          Nginx + Filebeat + Zabbix Agent
-Web-2       	web-2	            нет	            10.0.11.31                                          Nginx + Filebeat + Zabbix Agent
-Bastion	        bastion	        84.252.130.131   	10.0.1.19                                           Bastion host (Jump host)
-Zabbix	        zabbix	        51.250.6.191	    10.0.1.18         <http://51.250.6.191/zabbix/>       Zabbix Server + Frontend + PostgreSQL
-Kibana	        kibana	        51.250.77.163	    10.0.1.13         <http://51.250.77.163:5601>         Kibana
-Elasticsearch	elasticsearch	    нет         	10.0.10.18                                          Elasticsearch + Zabbix Agent
+|Название        |ВМ          |Публичный IP        |Приватный IP         |Доступ из веб                          |Назначение|
+|:-:|:-:|:-:|:-:|:-:|:-:|
+|Web-1|           web-1|           	нет|           	10.0.10.14|                                          |Nginx + Filebeat + Zabbix Agent|
+|Web-2|       	web-2|	            нет|	            10.0.11.31|                                       |   Nginx + Filebeat + Zabbix Agent|
+|Bastion|	        bastion|	        84.252.130.131|   	10.0.1.19|                                    |       Bastion host (Jump host)|
+|Zabbix	|        zabbix|	        51.250.6.191|	    10.0.1.18 |        <http://51.250.6.191/zabbix/>  |     Zabbix Server + Frontend + PostgreSQL|
+|Kibana	|        kibana|	        51.250.77.163|	    10.0.1.13 |        <http://51.250.77.163:5601>    |     Kibana|
+|Elasticsearch|	elasticsearch|	    нет|         	10.0.10.18|                                          |Elasticsearch + Zabbix Agent|
 
 Конфигурация ВМ:2 ядра, 2–4 ГБ RAM, 10–15 ГБ HDD, Ubuntu 22.04 LTS
 
-![VM](http://VM.png)
+![VM](http://https://github.com/DefAKAAlex/Diplom/blob/main/IMG/VM.png)
 
 ### Балансировка
 
@@ -81,7 +82,7 @@ VPC: diplom-vpc (10.0.0.0/16)
 
 ### 1. Настройка переменных
 На основе terraform.tfvars.example был создан terraform.tfvars в котором были описанны переменные, которые не должны были попасть на Git
-![tfvars.png](http://tfvars.png)
+![tfvars.png](http://https://github.com/DefAKAAlex/Diplom/blob/main/IMG/tfvars.png)
 
 ### 2: Развёртывание инфраструктуры
 
@@ -94,9 +95,9 @@ VPC: diplom-vpc (10.0.0.0/16)
 **Ansible** установил сервере **Bastion** , что позволяет работать уже внутри созданной закрытой сети. Также это облегчаетс работу с ключами.\
 Процедура установки - тривиальная.\
 
-Создал [`~/ansible/inventory.ini`](http://****/ansible/inventory.ini)\
+Создал [`~/ansible/inventory.ini`](https://github.com/DefAKAAlex/Diplom/tree/main/ansible/inventory.ini)\
 
-На ВМ **Bastion** в [`~/ansible/`](http://****/ansible/)\ создаю следующие плейбуки:
+На ВМ **Bastion** в [`~/ansible/`](https://github.com/DefAKAAlex/Diplom/tree/main/ansible/)\ создаю следующие плейбуки:
 
 1. Nginx на web-серверах\
 ansible-playbook web.yml
@@ -126,20 +127,20 @@ ansible-playbook filebeat-install.yml
 
 ### Web - Сайт
 
-![site.png](http://site.png)
+![site.png](http://https://github.com/DefAKAAlex/Diplom/blob/main/IMG/site.png)
 
 ### Проверка работы балансировки:
 
 > for i in {1..5}; do curl -s http://158.160.187.67 | grep "Served by"; done
 
-![balanc.png](http://balanc.png)
+![balanc.png](http://https://github.com/DefAKAAlex/Diplom/blob/main/IMG/balanc.png)
 
 ### Проверка мониторинга (Zabbix)
 
 Все 6 ВМ добавлены в Zabbix и мониторятся через Zabbix Agent:\
 > bastion, web-1, web-2, zabbix, elasticsearch, kibana
 
-![zabbix.png](http://zabbix.png)
+![zabbix.png](http://https://github.com/DefAKAAlex/Diplom/blob/main/IMG/zabbix.png)
 
 К каждому хосту привязан шаблон Linux by Zabbix agent\
 
@@ -156,7 +157,7 @@ Elasticsearch (10.0.10.18:9200)
     \/
 Kibana (51.250.77.163:5601)
 
-![elastic.png](http://elastic.png)
+![elastic.png](http://https://github.com/DefAKAAlex/Diplom/blob/main/IMG/elastic.png)
 
 ### Безопасность
 
