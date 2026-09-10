@@ -1,0 +1,103 @@
+---
+- name: Install and configure Elasticsearch from local deb
+  hosts: elasticsearch
+  become: yes
+  vars:
+    es_deb_path: "/tmp/elasticsearch-8.11.0-amd64.deb"
+  tasks:
+    - name: Check if Elasticsearch is already installed
+      command: dpkg -l elasticsearch
+      register: es_installed
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Install Elasticsearch from deb
+      apt:
+        deb: "{{ es_deb_path }}"
+      when: es_installed.rc != 0
+
+    - name: Configure Elasticsearch - network.host
+      lineinfile:
+        path: /etc/elasticsearch/elasticsearch.yml
+        regexp: '^#?network.host:'
+        line: 'network.host: 0.0.0.0'
+
+    - name: Configure Elasticsearch - http.port
+      lineinfile:
+        path: /etc/elasticsearch/elasticsearch.yml
+        regexp: '^#?http.port:'
+        line: 'http.port: 9200'
+
+    - name: Configure Elasticsearch - discovery.type
+      lineinfile:
+        path: /etc/elasticsearch/elasticsearch.yml
+        regexp: '^#?discovery.type:'
+        line: 'discovery.type: single-node'
+
+    - name: Configure Elasticsearch - disable security for lab
+      blockinfile:
+        path: /etc/elasticsearch/elasticsearch.yml
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - security"
+        block: |
+          xpack.security.enabled: false
+          xpack.security.enrollment.enabled: false
+          xpack.security.http.ssl:
+            enabled: false
+          xpack.security.transport.ssl:
+            enabled: false
+
+    - name: Configure JVM heap size
+      copy:
+        dest: /etc/elasticsearch/jvm.options.d/heap.options
+        content: |
+          -Xms1g
+          -Xmx1g
+        owner: root
+        group: elasticsearch
+        mode: '0640'
+
+    - name: Ensure Elasticsearch is running and enabled
+      systemd:
+        name: elasticsearch
+        state: restarted
+        enabled: yes
+        daemon_reload: yes
+
+    - name: Increase vm.max_map_count
+      sysctl:
+        name: vm.max_map_count
+        value: '262144'
+        sysctl_set: yes
+        state: present
+        reload: yes
+
+    - name: Set ulimit - nofile for elasticsearch
+      pam_limits:
+        domain: elasticsearch
+        limit_type: '-'
+        limit_item: nofile
+        value: '65536'
+
+    - name: Set ulimit - nproc for elasticsearch
+      pam_limits:
+        domain: elasticsearch
+        limit_type: '-'
+        limit_item: nproc
+        value: '4096'
+
+    - name: Set memlock for elasticsearch
+      pam_limits:
+        domain: elasticsearch
+        limit_type: '-'
+        limit_item: memlock
+        value: 'unlimited'
+
+    - name: Wait for Elasticsearch to be ready
+      uri:
+        url: "http://localhost:9200"
+        method: GET
+        status_code: 200
+      register: es_ready
+      retries: 15
+      delay: 5
+      until: es_ready.status == 200

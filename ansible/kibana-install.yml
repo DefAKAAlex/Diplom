@@ -1,0 +1,64 @@
+---
+- name: Install and configure Kibana from local deb
+  hosts: kibana
+  become: yes
+  vars:
+    kibana_deb_path: "/tmp/kibana-8.11.0-amd64.deb"
+    elasticsearch_host: "10.0.10.18"
+  tasks:
+    - name: Check if Kibana is already installed
+      command: dpkg -l kibana
+      register: kibana_installed
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Check if deb file exists
+      stat:
+        path: "{{ kibana_deb_path }}"
+      register: deb_file
+
+    - name: Fail if deb file is missing
+      fail:
+        msg: "Kibana deb file not found at {{ kibana_deb_path }}. Please scp it first."
+      when: not deb_file.stat.exists
+
+    - name: Install Kibana from deb
+      apt:
+        deb: "{{ kibana_deb_path }}"
+      when: kibana_installed.rc != 0
+
+    - name: Configure Kibana - server.host
+      lineinfile:
+        path: /etc/kibana/kibana.yml
+        regexp: '^#?server.host:'
+        line: 'server.host: "0.0.0.0"'
+
+    - name: Configure Kibana - server.port
+      lineinfile:
+        path: /etc/kibana/kibana.yml
+        regexp: '^#?server.port:'
+        line: 'server.port: 5601'
+
+    - name: Configure Kibana - elasticsearch.hosts
+      lineinfile:
+        path: /etc/kibana/kibana.yml
+        regexp: '^#?elasticsearch.hosts:'
+        line: 'elasticsearch.hosts: ["http://{{ elasticsearch_host }}:9200"]'
+
+    - name: Ensure Kibana is running and enabled
+      systemd:
+        name: kibana
+        state: restarted
+        enabled: yes
+        daemon_reload: yes
+
+    - name: Wait for Kibana to be ready
+      uri:
+        url: "http://localhost:5601/api/status"
+        method: GET
+        status_code: 200
+      register: kibana_ready
+      retries: 20
+      delay: 5
+      until: kibana_ready.status == 200
+      ignore_errors: yes

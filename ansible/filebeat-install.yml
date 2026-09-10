@@ -1,0 +1,108 @@
+---
+- name: Install and configure Filebeat on web servers
+  hosts: web
+  become: yes
+  vars:
+    filebeat_version: "8.11.0"
+    elasticsearch_host: "10.0.10.18"
+  tasks:
+    - name: Check if Filebeat is already installed
+      command: dpkg -l filebeat
+      register: filebeat_installed
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Check if deb file exists
+      stat:
+        path: "/tmp/filebeat-{{ filebeat_version }}-amd64.deb"
+      register: deb_file
+
+    - name: Download Filebeat deb package
+      get_url:
+        url: "https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-{{ filebeat_version }}-amd64.deb"
+        dest: "/tmp/filebeat-{{ filebeat_version }}-amd64.deb"
+        mode: '0644'
+        force: no
+      when:
+        - filebeat_installed.rc != 0
+        - not deb_file.stat.exists
+      register: fb_download
+      retries: 2
+      delay: 5
+      until: fb_download is success
+      ignore_errors: yes
+
+    - name: Fail if deb file is missing
+      fail:
+        msg: "Filebeat deb file not found. Please scp it to /tmp/filebeat-{{ filebeat_version }}-amd64.deb"
+      when:
+        - filebeat_installed.rc != 0
+        - not deb_file.stat.exists
+        - fb_download is failed
+
+    - name: Install Filebeat from deb
+      apt:
+        deb: "/tmp/filebeat-{{ filebeat_version }}-amd64.deb"
+      when: filebeat_installed.rc != 0
+
+    - name: Configure Filebeat - elasticsearch output
+      lineinfile:
+        path: /etc/filebeat/filebeat.yml
+        regexp: '^output.elasticsearch:'
+        line: 'output.elasticsearch:'
+
+    - name: Configure Filebeat - elasticsearch hosts
+      lineinfile:
+        path: /etc/filebeat/filebeat.yml
+        regexp: '^  hosts:'
+        line: '  hosts: ["http://{{ elasticsearch_host }}:9200"]'
+        insertafter: '^output.elasticsearch:'
+
+    - name: Configure Filebeat - kibana host
+      lineinfile:
+        path: /etc/filebeat/filebeat.yml
+        regexp: '^#?setup.kibana:'
+        line: |
+          setup.kibana:
+            host: "http://10.0.1.13:5601"
+
+    - name: Disable Elasticsearch output (default commented)
+      replace:
+        path: /etc/filebeat/filebeat.yml
+        regexp: '^#output.elasticsearch:'
+        replace: 'output.elasticsearch:'
+
+    - name: Enable nginx module
+      command: filebeat modules enable nginx
+      args:
+        creates: /etc/filebeat/modules.d/nginx.yml
+
+    - name: Configure nginx module
+      copy:
+        dest: /etc/filebeat/modules.d/nginx.yml
+        content: |
+          - module: nginx
+            access:
+              enabled: true
+              var.paths: ["/var/log/nginx/access.log*"]
+            error:
+              enabled: true
+              var.paths: ["/var/log/nginx/error.log*"]
+            ingress_controller:
+              enabled: false
+        owner: root
+        group: root
+        mode: '0644'
+      notify: restart filebeat
+
+    - name: Setup Filebeat (load dashboards and index templates)
+      command: filebeat setup
+      register: fb_setup
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Ensure Filebeat is running and enabled
+      systemd:
+        name: filebeat
+        state: restarted
+        enabled: yes

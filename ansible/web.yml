@@ -1,0 +1,72 @@
+---
+- name: Inst&config nginx
+  hosts: web
+  become: yes
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      register: apt_update
+      until: apt_update is success
+      retries: 3
+      delay: 10
+
+    - name: Install nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: Create website directory
+      file:
+        path: /var/www/html
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
+    - name: index.html
+      copy:
+        dest: /var/www/html/index.html
+        content: |
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>project Iskryanov AV </title>
+              <style>
+                  body {
+                      font-family: Arial, sans-serif;
+                      text-align: center;
+                      padding: 50px;
+                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                      color: white;
+                  }
+                  h1 { font-size: 48px; }
+                  p { font-size: 24px; }
+                  .hostname {
+                      background: rgba(255,255,255,0.2);
+                      padding: 20px;
+                      border-radius: 10px;
+                      display: inline-block;
+                      margin-top: 20px;
+                  }
+              </style>
+          </head>
+          <body>
+              <h1>project Iskryanov</h1>
+              <p>Yandex Cloud Infrastructure</p>
+              <div class="hostname">
+                  <p>Served by: <strong>{{ ansible_hostname }}</strong></p>
+                  <p>IP: <strong>{{ ansible_default_ipv4.address }}</strong></p>
+              </div>
+          </body>
+          </html>
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Test nginx enabled
+      systemd:
+        name: nginx
+        state: started
+        enabled: yes

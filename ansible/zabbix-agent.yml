@@ -1,0 +1,55 @@
+---
+- name: Install Zabbix Agent for all hosts
+  hosts: web:elasticsearch:kibana:bastion
+  become: yes
+  vars:
+    zabbix_server_ip: "10.0.1.18"   # Приватный IP Zabbix-сервера
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Download Zabbix
+      get_url:
+        url: https://repo.zabbix.com/zabbix/6.4/ubuntu/pool/main/z/zabbix-release/zabbix-release_6.4-1+ubuntu22.04_all.deb
+        dest: /tmp/zabbix-release.deb
+        mode: '0644'
+
+    - name: Install Zabbix
+      apt:
+        deb: /tmp/zabbix-release.deb
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 0
+
+    - name: Install Zabbix agent
+      apt:
+        name: zabbix-agent
+        state: present
+
+    - name: Configure Zabbix agent - Server
+      lineinfile:
+        path: /etc/zabbix/zabbix_agentd.conf
+        regexp: '^Server='
+        line: 'Server={{ zabbix_server_ip }}'
+
+    - name: Configure Zabbix agent - ServerActive
+      lineinfile:
+        path: /etc/zabbix/zabbix_agentd.conf
+        regexp: '^ServerActive='
+        line: 'ServerActive={{ zabbix_server_ip }}'
+
+    - name: Configure Zabbix agent - Hostname
+      lineinfile:
+        path: /etc/zabbix/zabbix_agentd.conf
+        regexp: '^Hostname='
+        line: 'Hostname={{ ansible_hostname }}'
+
+    - name: Restart and enable Zabbix agent
+      systemd:
+        name: zabbix-agent
+        state: restarted
+        enabled: yes

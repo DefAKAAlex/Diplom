@@ -1,0 +1,117 @@
+---
+- name: Install Zabbix Server with PostgreSQL
+  hosts: zabbix
+  become: yes
+  vars:
+    postgres_password: "zabbix_password_2026"
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install required packages
+      apt:
+        name:
+          - wget
+          - gnupg
+          - postgresql
+          - postgresql-contrib
+          - python3-psycopg2
+          - acl
+        state: present
+
+    - name: Download Zabbix release package
+      get_url:
+        url: https://repo.zabbix.com/zabbix/6.4/ubuntu/pool/main/z/zabbix-release/zabbix-release_6.4-1+ubuntu22.04_all.deb
+        dest: /tmp/zabbix-release.deb
+        mode: '0644'
+
+    - name: Install Zabbix release package
+      apt:
+        deb: /tmp/zabbix-release.deb
+
+    - name: Update apt cache after Zabbix repo
+      apt:
+        update_cache: yes
+        cache_valid_time: 0
+
+    - name: Install Zabbix server, frontend, agent
+      apt:
+        name:
+          - zabbix-server-pgsql
+          - zabbix-frontend-php
+          - php8.1-pgsql
+          - zabbix-apache-conf
+          - zabbix-sql-scripts
+          - zabbix-agent
+        state: present
+
+    - name: Ensure PostgreSQL is running
+      systemd:
+        name: postgresql
+        state: started
+        enabled: yes
+
+    - name: Create Zabbix database user
+      become_user: postgres
+      community.postgresql.postgresql_user:
+        name: zabbix
+        password: "{{ postgres_password }}"
+      ignore_errors: yes
+
+    - name: Create Zabbix database
+      become_user: postgres
+      community.postgresql.postgresql_db:
+        name: zabbix
+        owner: zabbix
+      ignore_errors: yes
+
+    - name: Check if Zabbix schema is already imported
+      become_user: postgres
+      shell: psql -d zabbix -c "\dt" | grep -c "users" || true
+      register: schema_check
+      changed_when: false
+
+    - name: Import Zabbix initial schema
+      become_user: postgres
+      shell: zcat /usr/share/zabbix-sql-scripts/postgresql/server.sql.gz | psql -d zabbix
+      when: schema_check.stdout == "0"
+
+    - name: Configure Zabbix server DB password
+      lineinfile:
+        path: /etc/zabbix/zabbix_server.conf
+        regexp: '^DBPassword='
+        line: 'DBPassword={{ postgres_password }}'
+
+    - name: Configure Zabbix frontend DB password
+      lineinfile:
+        path: /etc/zabbix/web/zabbix.conf.php
+        regexp: "\\$DB\\['PASSWORD'\\]"
+        line: "$DB['PASSWORD'] = '{{ postgres_password }}';"
+      ignore_errors: yes
+
+    - name: Restart and enable Zabbix server
+      systemd:
+        name: zabbix-server
+        state: restarted
+        enabled: yes
+
+    - name: Restart and enable Zabbix agent
+      systemd:
+        name: zabbix-agent
+        state: restarted
+        enabled: yes
+
+    - name: Restart Apache
+      systemd:
+        name: apache2
+        state: restarted
+        enabled: yes
+
+    - name: Configure firewall (ufw) - allow port 80
+      ufw:
+        rule: allow
+        port: '80'
+        proto: tcp
+      ignore_errors: yes
