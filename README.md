@@ -98,34 +98,6 @@ graph TB
     NAT --> Internet
 ```
 
-
-VPC: diplom-vpc (10.0.0.0/16)
-│
-├── NAT Gateway (nat-gateway) ──► выход в интернет для приватных подсетей
-│
-├── Security Groups
-│   ├── bastion-sg       (22)
-│   ├── web-sg           (80, 22, 10050)
-│   ├── zabbix-sg        (80, 10051, 22, 10050)
-│   ├── elasticsearch-sg (9200, 22, 10050)
-│   ├── kibana-sg        (5601, 22, 10050)
-│   └── alb-sg           (80)
-│
-├── Публичные подсети
-│   ├── subnet-public-a (10.0.1.0/24) - ru-central1-a
-│   │   ├── Bastion (10.0.1.19)
-│   │   ├── Zabbix (10.0.1.18)
-│   │   ├── Kibana (10.0.1.13)
-│   │   └── Application Load Balancer (внешний IP)
-│   └── subnet-public-b (10.0.2.0/24) - ru-central1-b
-│
-└── Приватные подсети (без внешнего доступа)
-    ├── subnet-private-a (10.0.10.0/24) - ru-central1-a
-    │   ├── Web-1 (10.0.10.14)
-    │   └── Elasticsearch (10.0.10.18)
-    └── subnet-private-b (10.0.11.0/24) - ru-central1-b
-        └── Web-2 (10.0.11.31)
-
 ## Развёртывание
 
 Работа проводилась на **Yandex Cloud**.
@@ -219,6 +191,8 @@ Kibana (51.250.77.163:5601)
 Естествено, все важные и секретные данные, такие как terraform.tfvars и key.json в .gitignore
 
 ## Описание проекта
+
+|:-:|:-:|
 |provider.tf                 |Провайдер Yandex Cloud|
 |variables.tf                |Переменные|
 |terraform.tfvars.example    |Пример переменных|
