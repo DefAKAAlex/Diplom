@@ -192,6 +192,7 @@ Kibana (51.250.77.163:5601)
 
 ## Описание проекта
 
+|название|описание|
 |:-:|:-:|
 |provider.tf                 |Провайдер Yandex Cloud|
 |variables.tf                |Переменные|
@@ -203,3 +204,4 @@ Kibana (51.250.77.163:5601)
 |snapshots.tf                |Snapshot Schedule|
 |outputs.tf                  |Outputs|
 |ansible/                    |папка с плейбуками|
+|IMG/|                       |скриншоты/
